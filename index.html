@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuickNote</title>
+  </head>
+  <body>
+    <div id="titlebar" data-tauri-drag-region></div>
+    <button id="theme-toggle" type="button" title="Theme"></button>
+    <main id="editor" spellcheck="true"></main>
+    <div id="status" data-state="idle">Idle</div>
+    <div id="notice" hidden></div>
+    <div id="settings" hidden></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
