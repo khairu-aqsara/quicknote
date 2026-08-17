@@ -124,17 +124,25 @@ filesystem. It is useful for working on the editor. It is not the application.
 
 | Platform | Format | Signed |
 |---|---|---|
-| macOS (Apple Silicon and Intel) | `.dmg` | Yes, signed and notarized |
+| macOS (Apple Silicon and Intel) | `.dmg` | Not yet |
 | Windows x64 | `.msi`, `.exe` | Not yet |
 | Linux x64 | `.AppImage`, `.deb` | Not yet |
 
-The Windows and Linux builds are unsigned, so the operating system shows a
-warning the first time you run them.
+All builds are unsigned, so the operating system shows a warning the first
+time you run them.
 
 - **Windows:** SmartScreen shows "Windows protected your PC". Choose
   **More info**, then **Run anyway**.
-- **macOS:** signed builds open normally. If you built it yourself, right-click
-  the app and choose **Open**.
+- **macOS:** Gatekeeper shows "Apple could not verify ... is free of malware".
+  Use one of these to open it anyway:
+  - Right-click (or Control-click) `QuickNote.app` and choose **Open**. A
+    dialog with an **Open** button appears — click it once, and macOS
+    remembers the choice after that.
+  - If macOS already offered only **Move to Trash**, open **System Settings →
+    Privacy & Security**, scroll down to the blocked-app notice, and click
+    **Open Anyway**.
+  - From a terminal: `xattr -d com.apple.quarantine /Applications/QuickNote.app`.
+    Repeat this after every unsigned update.
 
 To sign a macOS build yourself, set `signingIdentity` and `providerShortName`
 in `src-tauri/tauri.conf.json`, or export `APPLE_SIGNING_IDENTITY`,
