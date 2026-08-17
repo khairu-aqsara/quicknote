@@ -13,6 +13,18 @@ copy it to a backup, or commit it to Git.
 ~/QuickNote/notes.md
 ```
 
+## Install
+
+macOS, with [Homebrew](https://brew.sh):
+
+```bash
+brew tap khairu-aqsara/quicknote
+brew install --cask quicknote
+```
+
+Windows and Linux: download the installer for your platform from the
+[Releases page](https://github.com/khairu-aqsara/quicknote/releases).
+
 ## What it does
 
 - **Live Markdown.** Headings, bold, italic, strikethrough, lists, task lists,
