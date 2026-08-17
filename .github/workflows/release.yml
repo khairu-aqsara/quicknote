@@ -29,15 +29,14 @@ jobs:
 
       - run: npm ci
 
+      # No Apple signing secrets are configured yet, so this step builds an
+      # unsigned .dmg. Tauri's bundler treats an empty-string env var as a
+      # configured (but invalid) certificate and fails codesign, so the
+      # APPLE_* keys must stay absent here rather than set to "" — add them
+      # back only once real signing secrets exist in this repo.
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "QuickNote ${{ github.ref_name }}"
