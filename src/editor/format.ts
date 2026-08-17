@@ -141,6 +141,38 @@ function keepSelection(
 }
 
 /**
+ * The range without the whitespace at its edges.
+ *
+ * Markdown will not open a construct on a space. GFM asks the opening
+ * delimiter to be followed by something other than whitespace, and the closing
+ * one to be preceded by it, so `~~ struck~~` and `~~struck ~~` both stay
+ * literal tildes on screen — the grammar never builds a `Strikethrough` node
+ * for them, and nothing paints them.
+ *
+ * A drag that takes in the space before a word is completely ordinary, so the
+ * marks go around the text the selection covers rather than around the
+ * selection itself. Bold and italic share the rule; inline code does not, but
+ * it reads better trimmed too.
+ *
+ * An all-whitespace range comes back empty, which `planFormat` treats as
+ * nothing to style.
+ */
+function textIn(
+  state: EditorState,
+  from: number,
+  to: number,
+): { from: number; to: number } {
+  const text = state.sliceDoc(from, to);
+  const lead = text.length - text.trimStart().length;
+
+  // Nothing but whitespace. Collapse rather than return an inverted range.
+  if (lead === text.length) return { from: to, to };
+
+  const trail = text.length - text.trimEnd().length;
+  return { from: from + lead, to: to - trail };
+}
+
+/**
  * Works out how to apply or clear one style, without touching the view.
  *
  * Kept pure so it can be tested against a real syntax tree with no DOM.
@@ -150,7 +182,14 @@ export function planFormat(
   range: SelectionRange,
   style: InlineStyle,
 ): FormatPlan {
-  const { from, to } = range;
+  const { from, to } = textIn(state, range.from, range.to);
+
+  // The user selected whitespace and nothing else. Writing marks around it
+  // would produce a construct the grammar refuses to pair, so decline: the
+  // command reports that it did nothing and the key press falls through.
+  if (from === to && range.from !== range.to) {
+    return { changes: [], anchor: range.anchor, head: range.head };
+  }
 
   const node = enclosing(state, style.node, from, to);
   if (node) {
@@ -181,13 +220,19 @@ export function planFormat(
   );
 }
 
-/** True when the range already sits inside this construct. */
+/**
+ * True when the range already sits inside this construct.
+ *
+ * It asks about the same trimmed range `planFormat` acts on, so the formatting
+ * bar never shows a button as off and then clears the style when it is pressed.
+ */
 export function isStyled(
   state: EditorState,
   range: SelectionRange,
   style: InlineStyle,
 ): boolean {
-  return enclosing(state, style.node, range.from, range.to) !== null;
+  const { from, to } = textIn(state, range.from, range.to);
+  return enclosing(state, style.node, from, to) !== null;
 }
 
 /* ----------------------------------------------------------- the commands */
@@ -252,7 +297,10 @@ function removeLink(node: SyntaxNode): ChangeSpec[] | null {
  *
  * Kept pure for the same reason as `planFormat`.
  */
-export function planLink(state: EditorState, range: SelectionRange): FormatPlan {
+export function planLink(
+  state: EditorState,
+  range: SelectionRange,
+): FormatPlan {
   const { from, to } = range;
 
   const node = enclosing(state, "Link", from, to);
@@ -265,11 +313,19 @@ export function planLink(state: EditorState, range: SelectionRange): FormatPlan 
 
   if (ADDRESS.test(text)) {
     const anchor = from + 1;
-    return { changes: [{ from, to, insert: `[](${text})` }], anchor, head: anchor };
+    return {
+      changes: [{ from, to, insert: `[](${text})` }],
+      anchor,
+      head: anchor,
+    };
   }
 
   const anchor = from + text.length + 3;
-  return { changes: [{ from, to, insert: `[${text}]()` }], anchor, head: anchor };
+  return {
+    changes: [{ from, to, insert: `[${text}]()` }],
+    anchor,
+    head: anchor,
+  };
 }
 
 export const toggleLink: Command = (view) => {

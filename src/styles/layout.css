@@ -1,0 +1,42 @@
+/* The window itself: the page, the drag strip, and the editor host. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  overflow: hidden;
+  /* The window repaints on every theme switch. Keep it from flashing. */
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+/*
+ * The window has a transparent titlebar with inset traffic lights, so there is
+ * no native bar to grab. This strip is the drag handle.
+ *
+ * Dragging comes from the `data-tauri-drag-region` attribute in `index.html`,
+ * not from CSS. The `-webkit-app-region` property is an Electron feature and
+ * does nothing in the WebView Tauri uses.
+ */
+#titlebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 38px;
+  z-index: 5;
+}
+
+#editor {
+  height: 100%;
+  display: block;
+}

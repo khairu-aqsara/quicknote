@@ -1,0 +1,146 @@
+/*
+ * Every colour and measurement the application and the editor read.
+ * PRD Sections 19 and 20.
+ *
+ * This file must be imported first. Everything else resolves against it.
+ */
+
+:root {
+  /*
+   * The note is set in a serif, the way a page of prose is set. `ui-serif`
+   * resolves to New York on macOS; the rest of the stack covers the other
+   * platforms with screen serifs of the same weight and warmth. No font is
+   * bundled — PRD Section 20.
+   */
+  --font-prose:
+    ui-serif, "New York", "Iowan Old Style", "Charter", Georgia,
+    "Palatino Linotype", Palatino, "Times New Roman", serif;
+
+  /* The application's own chrome stays in the system interface face, so it
+     reads as part of the operating system rather than part of the note. */
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue",
+    Arial, sans-serif;
+
+  --font-mono:
+    "SF Mono", "Cascadia Mono", "JetBrains Mono", "Menlo", "Consolas", monospace;
+
+  --font-size: 17px;
+  --line-height: 1.72;
+  --measure: 44rem; /* about 70 characters of this serif at the default size */
+
+  /*
+   * One step of list indentation, and the width of a list marker's column.
+   * The bullet, the checkbox, and the ordered number all fill this width, so
+   * the text of every item starts on the same vertical line. A wrapped item
+   * hangs back to that same line. `editor/render/builder.ts` reads this value
+   * too.
+   */
+  --list-indent: 1.5em;
+}
+
+/* ------------------------------------------------------------------ light */
+
+:root,
+:root[data-theme="light"] {
+  --bg: #fdfdfb;
+  --text: #2b2b2b;
+  --heading: #1a1a1a;
+  --muted: #9a9a92;
+  --muted-strong: #6a6a63;
+  --mark: #c4c4bb;
+
+  --accent: #3d6ba5;
+  --accent-faint: #c3d3e6;
+  --caret: #3d6ba5;
+  --selection: #d5e3f5;
+
+  --code-bg: #f4f4ef;
+  --code-text: #3a3a36;
+  --border: #e6e6df;
+  --border-strong: #d5d5cc;
+
+  --panel-bg: #f7f7f3;
+  --search-match: #ffe9a8;
+  --search-active: #ffc94d;
+
+  --status-error: #b4472e;
+  --notice-bg: #fbf3d8;
+  --notice-border: #e6d9a8;
+  --notice-text: #6b5a20;
+
+  --callout-success: #2f7d44;
+  --callout-success-bg: #eef7f0;
+  --callout-info: #2f6aa8;
+  --callout-info-bg: #eef3fa;
+  --callout-warning: #9a6c12;
+  --callout-warning-bg: #fbf5e6;
+  --callout-danger: #b2402c;
+  --callout-danger-bg: #fbeeeb;
+  --callout-neutral: #6f7075;
+  --callout-neutral-bg: #f2f2ef;
+
+  /* Code tokens. Muted enough to read as prose, distinct enough to scan. */
+  --code-keyword: #8250a8;
+  --code-comment: #8a8a82;
+  --code-string: #1f7a4d;
+  --code-number: #b06020;
+  --code-function: #2f6aa8;
+  --code-type: #96632a;
+  --code-attribute: #2f6aa8;
+  --code-operator: #7a7a72;
+  --code-punctuation: #8f8f88;
+  --code-meta: #a03a5c;
+}
+
+/* ------------------------------------------------------------------- dark */
+
+:root[data-theme="dark"] {
+  --bg: #1e1f21;
+  --text: #d3d3d1;
+  --heading: #eeeeec;
+  --muted: #7b7d81;
+  --muted-strong: #9a9c9f;
+  --mark: #55575b;
+
+  --accent: #82a9dd;
+  --accent-faint: #3c5273;
+  --caret: #82a9dd;
+  --selection: #33445c;
+
+  --code-bg: #26282b;
+  --code-text: #c7c9c6;
+  --border: #333538;
+  --border-strong: #45484c;
+
+  --panel-bg: #26282b;
+  --search-match: #5a4c1e;
+  --search-active: #8a7420;
+
+  --status-error: #e2755a;
+  --notice-bg: #2f2a1c;
+  --notice-border: #4a4229;
+  --notice-text: #d8c98f;
+
+  --callout-success: #6cbf85;
+  --callout-success-bg: #1f2a22;
+  --callout-info: #7aa8dd;
+  --callout-info-bg: #1e242d;
+  --callout-warning: #d4ac63;
+  --callout-warning-bg: #2b2619;
+  --callout-danger: #e08a72;
+  --callout-danger-bg: #2c1f1c;
+  --callout-neutral: #9a9ca1;
+  --callout-neutral-bg: #26282b;
+
+  --code-keyword: #c193e0;
+  --code-comment: #74766f;
+  --code-string: #82c99a;
+  --code-number: #e0a06a;
+  --code-function: #82a9dd;
+  --code-type: #dcc07a;
+  --code-attribute: #82a9dd;
+  --code-operator: #9a9c95;
+  --code-punctuation: #83857e;
+  --code-meta: #e08aa4;
+}

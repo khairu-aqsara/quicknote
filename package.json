@@ -13,10 +13,12 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "typecheck": "tsc --noEmit",
-    "check:exit": "tsx src/editor/commands.check.ts",
-    "check:callouts": "tsx src/editor/callouts.check.ts",
-    "check:format": "tsx src/editor/format.check.ts",
-    "check": "npm run typecheck && npm run check:exit && npm run check:callouts && npm run check:format"
+    "lint": "oxlint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.4",
@@ -34,8 +36,10 @@
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^26.2.0",
-    "tsx": "^4.23.12",
+    "oxlint": "^1.78.0",
+    "prettier": "^3.9.6",
     "typescript": "^7.0.2",
-    "vite": "^8.2.1"
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
   }
 }

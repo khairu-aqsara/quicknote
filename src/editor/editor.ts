@@ -5,46 +5,30 @@
  * the application reads the source from here and writes it back unchanged.
  */
 
-import { EditorState, Compartment, Prec } from "@codemirror/state";
+import { Annotation, Compartment, EditorState } from "@codemirror/state";
 import {
-  EditorView,
-  keymap,
+  crosshairCursor,
   drawSelection,
   dropCursor,
+  EditorView,
   highlightSpecialChars,
+  keymap,
   rectangularSelection,
-  crosshairCursor,
 } from "@codemirror/view";
 import {
+  defaultKeymap,
   history,
   historyKeymap,
-  defaultKeymap,
   indentWithTab,
 } from "@codemirror/commands";
-import {
-  search,
-  searchKeymap,
-  openSearchPanel,
-  closeSearchPanel,
-} from "@codemirror/search";
+import { search, searchKeymap } from "@codemirror/search";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { liveRender } from "./live-render";
-import { editorTheme, codeHighlight } from "./theme";
-import {
-  arrowDownEscapesBlock,
-  closeCalloutOnEnter,
-  closeFenceOnEnter,
-  exitBlock,
-} from "./commands";
-import {
-  toggleBold,
-  toggleCode,
-  toggleItalic,
-  toggleLink,
-  toggleStrikethrough,
-} from "./format";
+
 import { formatBar } from "./format-bar";
+import { editorKeymap } from "./keymap";
+import { imageResolver, liveRender, type ImageResolver } from "./render";
+import { codeHighlight, editorTheme } from "./theme";
 
 export interface EditorHooks {
   /** Fires on every document change the user made. */
@@ -64,9 +48,21 @@ export interface EditorHooks {
 /** Swapped at runtime when the user changes the font size. */
 const fontSize = new Compartment();
 
+/** Swapped when the user picks another note file, so images follow it. */
+const images = new Compartment();
+
+/**
+ * Marks a change the application made, not the user: a reload after an external
+ * edit, or a switch to another note file. Autosave must ignore these. Without
+ * the mark, reading a file immediately writes it back and reports it as unsaved
+ * work, and switching files saves the new text against the old file's hash.
+ */
+const programmatic = Annotation.define<boolean>();
+
 export function createEditor(
   parent: HTMLElement,
   initialContent: string,
+  resolveImage: ImageResolver,
   hooks: EditorHooks,
 ): EditorView {
   const state = EditorState.create({
@@ -100,78 +96,11 @@ export function createEditor(
       editorTheme,
       codeHighlight,
       fontSize.of([]),
+      images.of(imageResolver.of(resolveImage)),
 
-      // These must beat the Markdown extension's own Enter handler, so they
-      // are registered at a higher precedence than everything below.
-      Prec.high(
-        keymap.of([
-          { key: "Enter", run: closeFenceOnEnter },
-          { key: "Enter", run: closeCalloutOnEnter },
-          { key: "Mod-Enter", run: exitBlock, preventDefault: true },
-          { key: "ArrowDown", run: arrowDownEscapesBlock },
-
-          // Inline formatting. The same commands the formatting bar runs.
-          { key: "Mod-b", preventDefault: true, run: toggleBold },
-          { key: "Mod-i", preventDefault: true, run: toggleItalic },
-          { key: "Mod-Shift-x", preventDefault: true, run: toggleStrikethrough },
-          { key: "Mod-e", preventDefault: true, run: toggleCode },
-          { key: "Mod-k", preventDefault: true, run: toggleLink },
-
-          {
-            key: "Mod-s",
-            preventDefault: true,
-            run: () => {
-              hooks.onFlush();
-              return true;
-            },
-          },
-          {
-            key: "Mod-,",
-            preventDefault: true,
-            run: () => {
-              hooks.onSettings();
-              return true;
-            },
-          },
-          // Every layout writes `+` differently, so bind each spelling.
-          ...(["Mod-=", "Mod-+", "Mod-Shift-=", "Mod-Shift-+"] as const).map(
-            (key) => ({
-              key,
-              preventDefault: true,
-              run: () => {
-                hooks.onFontStep(1);
-                return true;
-              },
-            }),
-          ),
-          ...(["Mod--", "Mod-_", "Mod-Shift--"] as const).map((key) => ({
-            key,
-            preventDefault: true,
-            run: () => {
-              hooks.onFontStep(-1);
-              return true;
-            },
-          })),
-          {
-            key: "Mod-0",
-            preventDefault: true,
-            run: () => {
-              hooks.onFontStep(0);
-              return true;
-            },
-          },
-
-          { key: "Mod-f", preventDefault: true, run: openSearchPanel },
-          {
-            key: "Escape",
-            run: (view) => {
-              if (closeSearchPanel(view)) return true;
-              hooks.onEscape();
-              return true;
-            },
-          },
-        ]),
-      ),
+      // Must beat the Markdown extension's own Enter handler and the
+      // defaults below, so it is registered at a higher precedence.
+      editorKeymap(hooks),
 
       keymap.of([
         ...searchKeymap,
@@ -181,7 +110,10 @@ export function createEditor(
       ]),
 
       EditorView.updateListener.of((update) => {
-        if (update.docChanged) {
+        const applicationEdit = update.transactions.some(
+          (tr) => tr.annotation(programmatic) === true,
+        );
+        if (update.docChanged && !applicationEdit) {
           hooks.onChange(update.state.doc.toString());
         }
         if (update.selectionSet) {
@@ -194,13 +126,38 @@ export function createEditor(
   return new EditorView({ state, parent });
 }
 
-/** Replaces the whole document without destroying the undo history. */
+/**
+ * Replaces the whole document without destroying the undo history.
+ *
+ * The change carries the `programmatic` mark, so autosave does not treat text
+ * that just came off disk as text the user typed.
+ */
 export function replaceDocument(view: EditorView, content: string): void {
   const cursor = Math.min(view.state.selection.main.head, content.length);
   view.dispatch({
     changes: { from: 0, to: view.state.doc.length, insert: content },
     selection: { anchor: cursor },
+    annotations: programmatic.of(true),
   });
+}
+
+/**
+ * Puts the scroll position back where the last session left it, then makes sure
+ * the restored cursor is still on screen.
+ *
+ * The two values are stored separately and can disagree — the file may have
+ * shrunk outside QuickNote since they were written. The cursor wins, because
+ * the first keystroke would jump the view there anyway.
+ */
+export function restoreScroll(view: EditorView, top: number): void {
+  if (top > 0) view.scrollDOM.scrollTop = top;
+
+  const head = view.state.selection.main.head;
+  const coords = view.coordsAtPos(head);
+  const box = view.scrollDOM.getBoundingClientRect();
+  if (!coords || coords.top < box.top || coords.bottom > box.bottom) {
+    view.dispatch({ effects: EditorView.scrollIntoView(head) });
+  }
 }
 
 export function setFontSize(view: EditorView, px: number): void {
@@ -209,6 +166,19 @@ export function setFontSize(view: EditorView, px: number): void {
       EditorView.theme({ "&": { fontSize: `${px}px` } }),
     ),
   });
+}
+
+/**
+ * Points the renderer at another note's directory.
+ *
+ * Images resolve against the folder that holds the note, so the resolver has to
+ * follow the note whenever the user chooses another file.
+ */
+export function setImageResolver(
+  view: EditorView,
+  resolve: ImageResolver,
+): void {
+  view.dispatch({ effects: images.reconfigure(imageResolver.of(resolve)) });
 }
 
 export function focusEditor(view: EditorView): void {

@@ -1,0 +1,117 @@
+/*
+ * The three things on screen besides the text: the theme toggle, the save
+ * indicator, and the notice line. PRD Section 8.
+ *
+ * None of them ever takes focus, and none of them blocks typing.
+ */
+
+/* ----------------------------------------------------------- theme toggle */
+
+/*
+ * The one control on screen besides the editor. It stays faint until the
+ * pointer is near it, so it never competes with the text.
+ */
+#theme-toggle {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 6;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0.4;
+  transition:
+    opacity 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+#theme-toggle:hover,
+#theme-toggle:focus-visible {
+  opacity: 1;
+  color: var(--text);
+  background: var(--panel-bg);
+  outline: none;
+}
+
+#theme-toggle svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+/* --------------------------------------------------------- save indicator */
+
+#status {
+  position: fixed;
+  right: 16px;
+  bottom: 12px;
+  z-index: 10;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  user-select: none;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+
+#status[data-state="saving"],
+#status[data-state="saved"] {
+  opacity: 0.75;
+}
+
+#status[data-state="error"] {
+  opacity: 1;
+  color: var(--status-error);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------ notice line */
+
+#notice {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 16px;
+  z-index: 20;
+  max-width: min(640px, calc(100vw - 48px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  background: var(--notice-bg);
+  border: 1px solid var(--notice-border);
+  color: var(--notice-text);
+  border-radius: 7px;
+  box-shadow: 0 4px 18px rgb(0 0 0 / 12%);
+}
+
+#notice[hidden] {
+  display: none;
+}
+
+#notice button {
+  flex: none;
+  border: none;
+  background: none;
+  color: inherit;
+  opacity: 0.55;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+#notice button:hover {
+  opacity: 1;
+}

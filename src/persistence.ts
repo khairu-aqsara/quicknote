@@ -5,7 +5,7 @@
  * This class decides only *when* to write, and what to tell the user.
  */
 
-import { noteSave, noteCheck } from "./bridge";
+import type { Backend } from "./bridge";
 
 /** PRD Section 12 — write once the user stops typing. */
 const DEBOUNCE_MS = 400;
@@ -21,6 +21,8 @@ export interface PersistenceHooks {
   onReload: (content: string) => void;
   /** An external edit arrived while the editor was dirty. */
   onConflict: (conflictFile: string) => void;
+  /** The note file was deleted or moved outside QuickNote. */
+  onMissing: () => void;
   onError: (message: string) => void;
 }
 
@@ -30,17 +32,44 @@ export class Persistence {
   private dirty = false;
   private stopped = false;
 
+  /**
+   * Counts note files this instance has served. A write started before a
+   * `reset` belongs to the previous file, so its result must not land on the
+   * new file's hash.
+   */
+  private generation = 0;
+
   private debounceTimer: number | null = null;
   private maxTimer: number | null = null;
   private inflight: Promise<void> | null = null;
 
   constructor(
+    private readonly backend: Backend,
     initialContent: string,
     initialHash: string,
     private readonly hooks: PersistenceHooks,
   ) {
     this.content = initialContent;
     this.baseHash = initialHash;
+  }
+
+  /**
+   * Points this instance at another file's content and hash.
+   *
+   * Every field that describes the *previous* file has to go. A stale
+   * `baseHash` makes the next write compare the new file against the old
+   * file's hash, which reads as an external edit and writes a conflict copy of
+   * a file nobody touched. Writing starts again here, so a read-only file no
+   * longer stops QuickNote for the rest of the session.
+   */
+  reset(content: string, hash: string): void {
+    this.clearTimers();
+    this.generation++;
+    this.content = content;
+    this.baseHash = hash;
+    this.dirty = false;
+    this.stopped = false;
+    this.hooks.onState("saved");
   }
 
   /** The editor changed. Start or extend the autosave window. */
@@ -84,7 +113,18 @@ export class Persistence {
   async checkExternal(): Promise<void> {
     if (this.stopped || this.dirty) return;
     try {
-      const result = await noteCheck(this.baseHash);
+      const result = await this.backend.noteCheck(this.baseHash);
+
+      // The file was deleted or moved. Say so, then write the editor's text
+      // back to that path. A silent recreation on the next keystroke looks
+      // like the note came back on its own.
+      if (result.missing) {
+        this.hooks.onMissing();
+        this.dirty = true;
+        await this.write();
+        return;
+      }
+
       if (result.changed) {
         this.content = result.content;
         this.baseHash = result.hash;
@@ -119,10 +159,16 @@ export class Persistence {
 
     this.clearTimers();
     const pending = this.content;
+    const generation = this.generation;
     this.hooks.onState("saving");
 
-    this.inflight = noteSave(pending, this.baseHash)
+    this.inflight = this.backend
+      .noteSave(pending, this.baseHash)
       .then((result) => {
+        // The note file changed while this write was in flight. The result
+        // describes the old file and says nothing about the new one.
+        if (generation !== this.generation) return;
+
         this.baseHash = result.hash;
         // More typing may have arrived while the write was in flight.
         this.dirty = this.content !== pending;
@@ -133,6 +179,7 @@ export class Persistence {
         if (this.dirty) this.schedule(this.content);
       })
       .catch((error: unknown) => {
+        if (generation !== this.generation) return;
         this.hooks.onState("error");
         this.hooks.onError(String(error));
         // Keep the text dirty so the next autosave retries it.

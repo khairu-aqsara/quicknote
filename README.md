@@ -38,8 +38,13 @@ copy it to a backup, or commit it to Git.
 - **Safe with other editors.** If the file changed on disk while you had
   unsaved text, QuickNote keeps your version and saves the external one beside
   it as `notes.conflict-<timestamp>.md`. Neither version is lost.
-- **Global shortcut.** `⌃⌥⌘N` on macOS, `Ctrl+Alt+N` elsewhere, brings the
-  window up from any application with the cursor ready. Press it again to hide.
+- **Global shortcut.** `Ctrl+N` brings the window up from any application with
+  the cursor ready. Press it again to hide. Settings changes the combination —
+  a global shortcut takes those keys away from every other application, so pick
+  one you do not use elsewhere.
+- **Lives in the menu bar.** QuickNote sits beside the clock and the Wi-Fi
+  icon, not in the Dock or the taskbar. Click the icon to open or hide the
+  note. Right-click it to open the note or to quit.
 - **Offline and private.** No account, no cloud, no telemetry, no network
   request of any kind.
 
@@ -62,7 +67,7 @@ copy it to a backup, or commit it to Git.
 | `Cmd/Ctrl + W` | Hide the window, keep running |
 | `Cmd/Ctrl + Q` | Quit |
 | `Esc` | Close the find panel, the settings sheet, or a notice |
-| `⌃⌥⌘N` / `Ctrl+Alt+N` | Show or hide QuickNote from anywhere |
+| `Ctrl+N` | Show or hide QuickNote from anywhere |
 
 ## Where things live
 

@@ -1,0 +1,12 @@
+/*
+ * QuickNote — application chrome and the colour tokens the editor reads.
+ * PRD Sections 8, 19, and 20.
+ *
+ * `tokens.css` comes first. Every rule below it resolves against the custom
+ * properties it defines, so the order here is the cascade.
+ */
+
+@import "./tokens.css";
+@import "./layout.css";
+@import "./chrome.css";
+@import "./settings.css";

@@ -24,6 +24,7 @@
         "visible": true,
         "focus": true,
         "decorations": true,
+        "skipTaskbar": true,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
         "dragDropEnabled": false

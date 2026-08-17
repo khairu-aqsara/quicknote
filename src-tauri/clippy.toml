@@ -1,0 +1,8 @@
+# An `unwrap` in a test IS the assertion — a panic there is the failure being
+# reported. The ban applies to shipped code, where a panic loses the note.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+
+# Product and platform names that need no backticks. `..` keeps clippy's own
+# list as well.
+doc-valid-idents = ["QuickNote", "WebView", "CommonMark", "CodeMirror", ".."]

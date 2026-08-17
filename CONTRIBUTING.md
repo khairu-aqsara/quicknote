@@ -56,8 +56,9 @@ To work on the editor alone, `npm run dev` opens it in a browser against a
 2. **Unsupported syntax survives.** QuickNote does not render tables, but a
    pasted table must come back character for character after a save.
 3. **Rust owns anything that can lose text.** The note path, the atomic write,
-   the recovery scan, and the conflict copy stay in `src-tauri/src/lib.rs`. The
-   frontend never builds a path and never touches the filesystem.
+   the recovery scan, and the conflict copy stay in `src-tauri/src/` — see
+   `paths.rs`, `storage.rs`, and `note.rs`. The frontend never builds a path and
+   never touches the filesystem.
 4. **The interface layer is a leaf.** `src/persistence.ts` and
    `src/editor/` must not import from `src/ui.ts` or `src/settings.ts`.
 5. **No network.** QuickNote makes no outbound request. A dependency that
@@ -66,13 +67,30 @@ To work on the editor alone, `npm run dev` opens it in a browser against a
 ## Checks before you open a pull request
 
 ```bash
-npm run typecheck
+npm run check                                   # typecheck, lint, format, tests
 npm run build
-cd src-tauri && cargo check && cargo clippy
+cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 ```
+
+CI runs exactly these on every push and pull request.
 
 Then run the application and use it to write a real note for a few minutes.
 Most defects in a live-rendering editor only show up under a real cursor.
+
+## House rules the tools enforce
+
+- **No file over 300 lines of code.** `oxlint` counts code only — comments and
+  blank lines are free, because the reasoning in this codebase's comments is
+  worth more than the line count.
+- **No function over 100 lines.** A long function is the real cost; a long file
+  is only the symptom.
+- **No `unwrap` or `expect` in shipped Rust.** Clippy denies both. QuickNote
+  holds text the user has not saved anywhere else, so a panic costs more than
+  an error message. Tests may use them freely — there, a panic is the
+  assertion.
+- **No module-level mutable state in the frontend.** Anything that needs the
+  backend takes a `Backend`; anything the editor needs takes a facet or a
+  compartment.
 
 ## Commit messages
 

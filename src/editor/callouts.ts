@@ -55,8 +55,27 @@ export const CALLOUT_OPEN_RE = /^(\s*):::[ \t]*([A-Za-z][A-Za-z0-9_-]*)[ \t]*$/;
 const CALLOUT_CLOSE_RE = /^\s*:::[ \t]*$/;
 const FENCE_RE = /^\s*(`{3,}|~{3,})/;
 
+/**
+ * One scan per document, not one per render pass.
+ *
+ * The renderer rebuilds its decorations on selection moves, viewport scrolls,
+ * and focus changes as well as on edits, and each rebuild asks for the
+ * callouts. Every scan reads every line, so on a long note the repeats cost
+ * more than the edit itself. A `Text` value is immutable, so it is a safe key:
+ * the same document always has the same callouts.
+ */
+const scanned = new WeakMap<Text, Callout[]>();
+
 export function findCallouts(state: { doc: Text }): Callout[] {
-  const doc = state.doc;
+  const cached = scanned.get(state.doc);
+  if (cached) return cached;
+
+  const result = scanCallouts(state.doc);
+  scanned.set(state.doc, result);
+  return result;
+}
+
+function scanCallouts(doc: Text): Callout[] {
   const found: Callout[] = [];
   let inFence = false;
   let open: {
@@ -118,7 +137,13 @@ export function calloutAtLine(
 }
 
 function build(
-  open: { label: string; indent: string; from: number; to: number; line: number },
+  open: {
+    label: string;
+    indent: string;
+    from: number;
+    to: number;
+    line: number;
+  },
   lastLine: number,
   closeFrom: number | null,
   closeTo: number | null,

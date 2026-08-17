@@ -20,18 +20,21 @@ const TRAPPING = new Set(["FencedCode", "CodeBlock", "Table", "Blockquote"]);
  * Both sides have to be tried. At the end of a line or of the document there
  * is no node *starting* at the position, so asking with side 1 alone reports
  * no block — which is precisely where the cursor sits inside an open fence.
+ *
+ * The walk stops at the first match, so the result is the *innermost* block.
+ * That is what lets one press leave a code block and the next press leave the
+ * blockquote around it. Walking on to the root returns the outermost block and
+ * jumps the cursor past both in a single press.
  */
 function enclosingBlock(state: EditorState, pos: number) {
   for (const side of [-1, 1] as const) {
     let node = syntaxTree(state).resolveInner(pos, side);
-    let found: { from: number; to: number; name: string } | null = null;
     while (node.parent) {
       if (TRAPPING.has(node.name)) {
-        found = { from: node.from, to: node.to, name: node.name };
+        return { from: node.from, to: node.to, name: node.name };
       }
       node = node.parent;
     }
-    if (found) return found;
   }
   return null;
 }
@@ -123,7 +126,10 @@ function planCalloutExit(state: EditorState, pos: number): ExitPlan | null {
     if (next.text.trim() === "") return { anchor: next.from };
   }
 
-  return { insert: { from: closeLine.to, text: "\n" }, anchor: closeLine.to + 1 };
+  return {
+    insert: { from: closeLine.to, text: "\n" },
+    anchor: closeLine.to + 1,
+  };
 }
 
 export interface ExitPlan {

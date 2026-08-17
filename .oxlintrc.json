@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "rules": {
+    "max-lines": [
+      "error",
+      { "max": 300, "skipComments": true, "skipBlankLines": true }
+    ],
+    "max-lines-per-function": ["error", { "max": 100, "skipComments": true }],
+    "no-loop-func": "error",
+    "no-useless-return": "error",
+    "require-await": "error"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts"],
+      "rules": {
+        "max-lines-per-function": "off",
+        "unicorn/consistent-function-scoping": "off",
+        "unicorn/no-array-sort": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["dist", "src-tauri/target", "node_modules"]
+}
