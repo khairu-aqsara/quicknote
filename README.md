@@ -1,5 +1,5 @@
 # QuickNote
-
+![Quick Note](quicknote.png)
 > **Type it. Close it. It's still there.**
 
 QuickNote is a small desktop application for Markdown quick notes. You open it,
